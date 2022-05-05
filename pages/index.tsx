@@ -47,40 +47,13 @@ const BugList = ({bugs}: {bugs: any[]}) => {
 
 
 const Home: NextPage = (props) => {
-
-  const inbox = Array.from({ length: 10 }, (v, k) => k).map(k => {
-    const custom = {
-      id: `id-${k}`,
-      content: `Bug ${k}`
-    };
-  
-    return custom;
-  });
-
-  const initialColumns = {
-    inbox: {
-      id: 'inbox',
-      list: inbox
-    },
-    workingOn: {
-      id: 'working',
-      list: []
-    },
-    done: {
-      id: 'done',
-      list: []
-    }
-  }
-
   const [winReady, setwinReady] = useState(false);
   useEffect(() => {
       setwinReady(true);
   }, []);
 
-  const [state, setState] = useState(initialColumns);
+  const [state, setState] = useState(props.data);
 
-  
-  
   function onDragEnd(result: any) {
     console.log({state})
     if (!result.destination) {
@@ -154,15 +127,37 @@ const Home: NextPage = (props) => {
 }
 
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getServerSideProps: GetServerSideProps = async ({query}) => {
 
   //resetServerContext()   // <-- CALL RESET SERVER CONTEXT, SERVER SIDE
 
+  const inbox = Array.from({ length: 10 }, (v, k) => k).map(k => {
+    const custom = {
+      id: `id-${k}`,
+      content: `Bug ${k}`
+    };
   
+    return custom;
+  });
+
+  const initialColumns = {
+    inbox: {
+      id: 'inbox',
+      list: inbox
+    },
+    workingOn: {
+      id: 'working',
+      list: []
+    },
+    done: {
+      id: 'done',
+      list: []
+    }
+  }
 
   
 
-  return {props: { data: [] }}
+  return {props: { data: initialColumns }}
 
 }
 
