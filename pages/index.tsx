@@ -1,5 +1,5 @@
-import type { GetServerSideProps, NextPage } from 'next'
-import React, { useState } from 'react'
+import type { GetServerSideProps, GetStaticProps, NextPage } from 'next'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Image from 'next/image'
 
@@ -36,7 +36,6 @@ function Bug({ bug, index }: {bug: any, index: any}) {
 }
 
 const BugList = ({bugs}: {bugs: any[]}) => {
-  console.log({bugs})
   return (
   <div className='w-52'>
     {bugs ? bugs.map((bug: any, index: number) => (
@@ -49,71 +48,6 @@ const BugList = ({bugs}: {bugs: any[]}) => {
 
 const Home: NextPage = (props) => {
 
-  const [state, setState] = useState({bugs: props.data});
-
-  
-  
-  function onDragEnd(result: any) {
-    console.log({result, state})
-    if (!result.destination) {
-      return;
-    }
-
-    if (result.destination.index === result.source.index) {
-      return;
-    }
-
-    if (result.destination.droppableId === result.source.droppableId) {
-      const bugs = reorder(
-        state.bugs,
-        result.source.index,
-        result.destination.index
-      );
-
-      setState({ bugs });
-    }
-
-    
-    
-
-    
-  }
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <main className="flex flex-col items-center justify-center flex-1 w-full px-20 text-center bg-slate-500">
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className='gap-4'>
-            <Droppable droppableId="inbox">
-              {(provided: any) => (
-                <div ref={provided.innerRef} {...provided.droppableProps}
-                  className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
-                >
-                  {state ? <BugList bugs={state.bugs} /> : null}
-                  
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>            
-          </div>
-          
-          
-        </DragDropContext>
-      </main>
-
-    </div>
-  )
-}
-
-
-export const getServerSideProps: GetServerSideProps = async ({ query }) => {
-
-  resetServerContext()   // <-- CALL RESET SERVER CONTEXT, SERVER SIDE
-
   const inbox = Array.from({ length: 10 }, (v, k) => k).map(k => {
     const custom = {
       id: `id-${k}`,
@@ -123,16 +57,112 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
     return custom;
   });
 
-  const initial = Array.from({ length: 10 }, (v, k) => k).map(k => {
-    const custom = {
-      id: `id-${k}`,
-      content: `Bug ${k}`
-    };
-  
-    return custom;
-  });
+  const initialColumns = {
+    inbox: {
+      id: 'inbox',
+      list: inbox
+    },
+    workingOn: {
+      id: 'working',
+      list: []
+    },
+    done: {
+      id: 'done',
+      list: []
+    }
+  }
 
-  return {props: { data : initial }}
+  const [winReady, setwinReady] = useState(false);
+  useEffect(() => {
+      setwinReady(true);
+  }, []);
+
+  const [state, setState] = useState(initialColumns);
+
+  
+  
+  function onDragEnd(result: any) {
+    console.log({state})
+    if (!result.destination) {
+      return;
+    }
+
+    if (result.destination.index === result.source.index) {
+      return;
+    }
+    
+    if (result.destination.droppableId === result.source.droppableId) {
+      let destinationColumn = state[result.destination.droppableId]
+      const bugs = reorder(
+        destinationColumn.list,
+        result.source.index,
+        result.destination.index
+      );
+      let newCol = {
+        id: destinationColumn.id,
+        list: bugs
+      }
+
+      console.log("my object", { 
+        ...state,
+        [destinationColumn.id]: {
+          ...newCol
+        }
+      },
+      "newCol: ", {newCol}
+      )
+      
+      setState({ 
+        ...state,
+        [destinationColumn.id]: {
+          ...newCol
+        }
+    });
+    }
+
+    console.log({state})
+  }
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+      <Head>
+        <title>Create Next App</title>
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main className="flex flex-col items-center justify-center flex-1 w-full px-20 text-center bg-slate-500">
+        {winReady ? <DragDropContext onDragEnd={onDragEnd}>
+          <div className='gap-4'>
+            <Droppable droppableId={state.inbox.id}>
+              {(provided: any) => (
+                <div ref={provided.innerRef} {...provided.droppableProps}
+                  className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
+                >
+                  {state ? <BugList bugs={state.inbox.list} /> : null}
+                  
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>            
+          </div>
+          
+          
+        </DragDropContext> : null}
+      </main>
+
+    </div>
+  )
+}
+
+
+export const getStaticProps: GetStaticProps = async () => {
+
+  //resetServerContext()   // <-- CALL RESET SERVER CONTEXT, SERVER SIDE
+
+  
+
+  
+
+  return {props: { data: [] }}
 
 }
 
