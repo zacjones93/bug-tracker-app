@@ -1,86 +1,139 @@
-import type { NextPage } from 'next'
+import type { GetServerSideProps, NextPage } from 'next'
+import React, { useState } from 'react'
 import Head from 'next/head'
 import Image from 'next/image'
 
-const Home: NextPage = () => {
+import { DragDropContext, Droppable, Draggable, resetServerContext } from 'react-beautiful-dnd';
+
+const reorder = (list: any, startIndex: any, endIndex: any) => {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed);
+
+  return result;
+};
+
+function Bug({ bug, index }: {bug: any, index: any}) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
+    <Draggable draggableId={bug.id} index={index}>
+      {(provided: any) => (
+        // width: 200px;
+        // border: 1px solid grey;
+        // margin-bottom: ${grid}px;
+        // background-color: lightblue;
+        // padding: ${grid}px;
+        <div
+          className='p-4 mb-4 bg-blue-100 border-blue-200 rounded w-52'
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+        >
+          {bug.content}
+        </div>
+      )}
+    </Draggable>
+  );
+}
+
+const BugList = ({bugs}: {bugs: any[]}) => {
+  console.log({bugs})
+  return (
+  <div className='w-52'>
+    {bugs ? bugs.map((bug: any, index: number) => (
+        <Bug bug={bug} index={index} key={bug.id} />
+    )) : null}
+  </div>
+  )
+}
+
+
+const Home: NextPage = (props) => {
+
+  const [state, setState] = useState({bugs: props.data});
+
+  
+  
+  function onDragEnd(result: any) {
+    console.log({result, state})
+    if (!result.destination) {
+      return;
+    }
+
+    if (result.destination.index === result.source.index) {
+      return;
+    }
+
+    if (result.destination.droppableId === result.source.droppableId) {
+      const bugs = reorder(
+        state.bugs,
+        result.source.index,
+        result.destination.index
+      );
+
+      setState({ bugs });
+    }
+
+    
+    
+
+    
+  }
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <Head>
         <title>Create Next App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
-
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="rounded-md bg-gray-100 p-3 font-mono text-lg">
-            pages/index.tsx
-          </code>
-        </p>
-
-        <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and its API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+      <main className="flex flex-col items-center justify-center flex-1 w-full px-20 text-center bg-slate-500">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className='gap-4'>
+            <Droppable droppableId="inbox">
+              {(provided: any) => (
+                <div ref={provided.innerRef} {...provided.droppableProps}
+                  className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
+                >
+                  {state ? <BugList bugs={state.bugs} /> : null}
+                  
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>            
+          </div>
+          
+          
+        </DragDropContext>
       </main>
 
-      <footer className="flex h-24 w-full items-center justify-center border-t">
-        <a
-          className="flex items-center justify-center gap-2"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-        </a>
-      </footer>
     </div>
   )
+}
+
+
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+
+  resetServerContext()   // <-- CALL RESET SERVER CONTEXT, SERVER SIDE
+
+  const inbox = Array.from({ length: 10 }, (v, k) => k).map(k => {
+    const custom = {
+      id: `id-${k}`,
+      content: `Bug ${k}`
+    };
+  
+    return custom;
+  });
+
+  const initial = Array.from({ length: 10 }, (v, k) => k).map(k => {
+    const custom = {
+      id: `id-${k}`,
+      content: `Bug ${k}`
+    };
+  
+    return custom;
+  });
+
+  return {props: { data : initial }}
+
 }
 
 export default Home
