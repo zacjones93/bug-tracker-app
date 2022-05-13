@@ -13,6 +13,15 @@ const reorder = (list: any, startIndex: any, endIndex: any) => {
   return result;
 };
 
+const insert = (arr: any[], index: number, newItem: any) => [
+  // part of the array before the specified index
+  ...arr.slice(0, index),
+  // inserted item
+  newItem,
+  // part of the array after the specified index
+  ...arr.slice(index)
+]
+
 function Bug({ bug, index }: {bug: any, index: any}) {
   return (
     <Draggable draggableId={bug.id} index={index}>
@@ -55,70 +64,125 @@ const Home: NextPage = (props) => {
   const [state, setState] = useState(props.data);
 
   function onDragEnd(result: any) {
-    console.log({state})
     if (!result.destination) {
       return;
     }
-
-    if (result.destination.index === result.source.index) {
-      return;
-    }
+    
+    
     
     if (result.destination.droppableId === result.source.droppableId) {
+      if (result.destination.index === result.source.index) return
       let destinationColumn = state[result.destination.droppableId]
-      const bugs = reorder(
-        destinationColumn.list,
+      let sourceColumn = state[result.source.droppableId]
+
+      const sourceBugs = reorder(
+        sourceColumn.list,
         result.source.index,
         result.destination.index
       );
+      
       let newCol = {
         id: destinationColumn.id,
-        list: bugs
+        list: sourceBugs
       }
-
-      console.log("my object", { 
-        ...state,
-        [destinationColumn.id]: {
-          ...newCol
-        }
-      },
-      "newCol: ", {newCol}
-      )
       
       setState({ 
         ...state,
         [destinationColumn.id]: {
           ...newCol
         }
-    });
+      });
     }
 
-    console.log({state})
+    if (result.destination.droppableId != result.source.droppableId) {
+      console.log("HEEERRREEEE")
+      let destinationColumn = state[result.destination.droppableId]
+      let sourceColumn = state[result.source.droppableId]
+      let bugToBeMoved = state[result.source.droppableId].list[result.source.index]
+
+      let newSourceList = sourceColumn.list.filter((el: any, i: number) => {
+        return i !== result.source.index
+      })
+
+      let newDestinationList = insert(destinationColumn.list, result.destination.index, bugToBeMoved)
+
+      
+
+      let newSourceCol = {
+        id: sourceColumn.id,
+        list: newSourceList
+      }
+
+      let newDestCol = {
+        id: destinationColumn.id,
+        list: newDestinationList
+      }
+      
+      setState({ 
+        ...state,
+        [sourceColumn.id]: {
+          ...newSourceCol
+        },
+        [destinationColumn.id]: {
+          ...newDestCol
+        }
+      });
+    }
   }
+
+  
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <Head>
         <title>Create Next App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
       <main className="flex flex-col items-center justify-center flex-1 w-full px-20 text-center bg-slate-500">
         {winReady ? <DragDropContext onDragEnd={onDragEnd}>
-          <div className='gap-4'>
-            <Droppable droppableId={state.inbox.id}>
-              {(provided: any) => (
-                <div ref={provided.innerRef} {...provided.droppableProps}
-                  className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
-                >
-                  {state ? <BugList bugs={state.inbox.list} /> : null}
-                  
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>            
-          </div>
-          
-          
+          <div className='flex gap-4'>
+            <div>
+              <h1>{state.inbox.id}</h1>
+              <Droppable droppableId={state.inbox.id}>
+                {(provided: any) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}
+                    className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
+                  >
+                    {state ? <BugList bugs={state.inbox.list} /> : null}
+                    
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+            <div>
+              <h1>{state.workingOn.id}</h1>
+              <Droppable droppableId={state.workingOn.id}>
+                {(provided: any) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}
+                    className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
+                  >
+                    {state ? <BugList bugs={state.workingOn.list} /> : null}
+                    
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable> 
+            </div>
+            <div>
+              <h1>{state.done.id}</h1>
+              <Droppable droppableId={state.done.id}>
+                {(provided: any) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}
+                    className="h-[60vh] p-4 overflow-scroll bg-slate-600 rounded-sm"
+                  >
+                    {state ? <BugList bugs={state.done.list} /> : null}
+                    
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable> 
+            </div>               
+          </div>      
         </DragDropContext> : null}
       </main>
 
@@ -146,8 +210,8 @@ export const getServerSideProps: GetServerSideProps = async ({query}) => {
       list: inbox
     },
     workingOn: {
-      id: 'working',
-      list: []
+      id: 'workingOn',
+      list: [{id: "123", content: "bug 123"}]
     },
     done: {
       id: 'done',
